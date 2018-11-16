@@ -1,6 +1,6 @@
 mod comms;
-mod input_udp;
 mod server;
+mod data;
 
 fn main() {
     // TODO: get configure from somewhere?

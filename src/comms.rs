@@ -32,11 +32,10 @@ impl <TInput,TOutput> CommsManager<TInput,TOutput>
         self.out_rx.recv().unwrap()
     }
 
-    pub fn finish(self: &mut Self) {
+    pub fn finalize(self: &mut Self) {
         // TODO: signal threads that we want to quit
-
-        for j in self.jh {
-            j.join().unwrap();
+        while let Some(i) = self.jh.pop() {
+            i.join().unwrap();
         }
     }
 }
@@ -57,17 +56,20 @@ pub fn start_udp<TInput,TOutput>(in_address: &String) -> CommsManager<TInput,TOu
     let (tx_own_out, rx_ext_out): (Sender<TOutput>, Receiver<TOutput>) = mpsc::channel();
     let (tx_ext_out, rx_own_out): (Sender<TOutput>, Receiver<TOutput>) = mpsc::channel();
 
-    UdpSocket::bind(in_address);
+    let socket = UdpSocket::bind(in_address).unwrap();
+    let thread_socket = socket.try_clone().unwrap();
 
     // spawn a thread to handle incoming data
     let jh = thread::spawn(move || {
         //input_udp::input_handler(&add, tx_own, rx_own)
-        
+        let mut buf = [0; 512];
+        socket.recv(&mut buf);
     });
 
     // spawn another thread to handle sending data
     let jh2 = thread::spawn(move || {
-        
+        let buf = [0; 512];
+        thread_socket.send(&buf);
     });
 
     CommsManager {
