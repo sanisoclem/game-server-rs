@@ -4,3 +4,4 @@ version = "0.1.0"
 authors = ["Jerahmeel Cosinas <me@jerahmeelcosinas.net>"]
 
 [dependencies]
+ctrlc = { version = "3.0", features = ["termination"] }
