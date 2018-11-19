@@ -5,19 +5,13 @@ use std::net::{SocketAddr};
 use mio_extras::channel;
 use mio::net::UdpSocket;
 use mio::{Token,Ready,PollOpt,Events};
+use prost::Message;
+use bytes::{BytesMut};
 
 pub enum ControlSignal {
     Terminate,
     SwapInput,
     SwapOutput
-}
-
-pub trait InputDatagram {
-    fn deserialize(buf: &[u8]) -> Self;
-}
-
-pub trait OutputDatagram {
-    fn encode(self: &Self, buf: &mut [u8]);
 }
 
 pub struct CommsManager<TInput,TOutput> 
@@ -62,8 +56,8 @@ impl <TInput,TOutput> CommsManager<TInput,TOutput>
 
 pub fn start_udp<TInput,TOutput>(in_address: &String) -> CommsManager<TInput,TOutput> 
     where 
-        TInput: std::marker::Send + InputDatagram + 'static,
-        TOutput: std::marker::Send + OutputDatagram + 'static 
+        TInput: std::marker::Send + Message + std::default::Default + 'static,
+        TOutput: std::marker::Send + Message + std::default::Default + 'static 
 {
     // -- control channel
     let (tx_ctx, rx_ctx) = channel::channel::<ControlSignal>();
@@ -71,17 +65,13 @@ pub fn start_udp<TInput,TOutput>(in_address: &String) -> CommsManager<TInput,TOu
     // -- channels to communicate with reciever thread
     let (in_tx_int, in_rx_ext) = mpsc::channel::<Box<Vec<(SocketAddr,TInput)>>>();
     let (in_tx_ext, in_rx_int) = mpsc::channel::<Box<Vec<(SocketAddr,TInput)>>>();
-    
 
     // -- channels to communicate with transmitter thread
     let (out_tx_int, out_rx_ext)  = mpsc::channel::<Box<Vec<(SocketAddr,TOutput)>>>();
     let (out_tx_ext, out_rx_int) = mpsc::channel::<Box<Vec<(SocketAddr,TOutput)>>>();
-    let(out_tx_ctl, out_rx_ctl) = channel::channel::<ControlSignal>();
-    
     
     let address = in_address.parse::<SocketAddr>().unwrap();
     let socket = UdpSocket::bind(&address).unwrap();
-    let socket_clone = socket.try_clone().unwrap();
     
     // spawn a thread to handle incoming data
     let jh = thread::Builder::new().name("input".to_owned()).spawn(move || {
@@ -107,13 +97,13 @@ fn start_udp_input<TInput,TOutput>(
     out_rx: mpsc::Receiver<Box<Vec<(SocketAddr,TOutput)>>>,
     ctx: channel::Receiver<ControlSignal>)
     where 
-        TInput: std::marker::Send + InputDatagram + 'static, 
-        TOutput: std::marker::Send + OutputDatagram + 'static, 
+        TInput: std::marker::Send + Message + std::default::Default + 'static, 
+        TOutput: std::marker::Send + Message + std::default::Default + 'static, 
 {
     const CTL: Token = Token(0);
     const SOCKET_IO: Token = Token(1);
 
-    let mut buf = [0;512]; 
+    let mut buf = BytesMut::with_capacity(512);
     let mut exit_requested = false;
     let mut input_buffer: Box<Vec<(SocketAddr,TInput)>> = Box::new(Vec::new());
     let mut output_buffer: Box<Vec<(SocketAddr,TOutput)>> = Box::new(Vec::new());
@@ -156,7 +146,7 @@ fn start_udp_input<TInput,TOutput>(
                 },
                 (SOCKET_IO,readiness) if readiness.is_writable()  => {
                     if let Some((addr,dg)) = output_buffer.pop() {
-                        dg.encode(&mut buf);
+                        dg.encode(&mut buf).unwrap();
                         match socket.send_to(&buf, &addr) {
                             Ok(_) => {}
                             Err(s) => {
@@ -167,7 +157,7 @@ fn start_udp_input<TInput,TOutput>(
                 },
                 (SOCKET_IO,readiness) if readiness.is_readable()  => {
                     let (_,addr) =  socket.recv_from(&mut buf).unwrap();
-                    input_buffer.push((addr, TInput::deserialize(&buf)));
+                    input_buffer.push((addr, TInput::decode(&buf).unwrap()));
                 },
                 _ => unreachable!(),
             }

@@ -15,7 +15,6 @@ pub mod data_proto {
 }
 mod comms;
 mod server;
-mod data;
 
 fn main() {
 
