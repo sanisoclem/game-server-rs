@@ -20,10 +20,12 @@ pub fn start(config: &ServerConfig, exit_requested: Arc<AtomicBool>) {
         // swap input buffers
         input_buf =  comms_mgr.swap_inputs(input_buf);
 
+        output_buf.clear();
+
         // calculate changes to game state
         while let Some((s,item)) = input_buf.pop() {
-            //println!("received message: {0}", item);
-            output_buf.push((s,OutputPacket{
+            println!("received message: {0}, {1:x?}", item.user, s);
+            output_buf.push((s, OutputPacket{
                 user: item.user,
                 state: item.action,
                 loc_x: item.loc_x,
@@ -37,7 +39,6 @@ pub fn start(config: &ServerConfig, exit_requested: Arc<AtomicBool>) {
 
         // -- swap buffers
         output_buf = comms_mgr.swap_outputs(output_buf);
-        output_buf.clear();
     }
     println!("cleaning up");
 

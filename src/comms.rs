@@ -103,14 +103,15 @@ fn start_udp_input<TInput,TOutput>(
     const CTL: Token = Token(0);
     const SOCKET_IO: Token = Token(1);
 
-    let mut buf = BytesMut::with_capacity(512);
+    let mut buf = [0;512];
+    let mut buf_mut = BytesMut::with_capacity(512);
     let mut exit_requested = false;
     let mut input_buffer: Box<Vec<(SocketAddr,TInput)>> = Box::new(Vec::new());
     let mut output_buffer: Box<Vec<(SocketAddr,TOutput)>> = Box::new(Vec::new());
     let poll = mio::Poll::new().unwrap();
 
     poll.register(&ctx, CTL, Ready::readable(), PollOpt::edge()).unwrap();
-    poll.register(&socket, SOCKET_IO, Ready::readable() | Ready::writable(), PollOpt::edge()).unwrap();
+    poll.register(&socket, SOCKET_IO, Ready::readable() | Ready::writable(), PollOpt::level()).unwrap();
     
     
     // Create storage for events
@@ -144,20 +145,24 @@ fn start_udp_input<TInput,TOutput>(
                         }
                     }
                 },
+                (SOCKET_IO,readiness) if readiness.is_readable()  => {
+                    println!("reading data");
+                    let (s,addr) =  socket.recv_from(&mut buf).unwrap();
+                    let decoded = TInput::decode::<&[u8]>(&buf[..s]).unwrap();
+                    input_buffer.push((addr, decoded));
+                },
                 (SOCKET_IO,readiness) if readiness.is_writable()  => {
                     if let Some((addr,dg)) = output_buffer.pop() {
-                        dg.encode(&mut buf).unwrap();
-                        match socket.send_to(&buf, &addr) {
+                        buf_mut.clear();
+                        dg.encode(&mut buf_mut).unwrap();
+                        println!("sending data {:x?}",buf_mut);
+                        match socket.send_to(&buf_mut, &addr) {
                             Ok(_) => {}
                             Err(s) => {
                                 println!("Error sending {0}", s);
                             }
                         };
                     }
-                },
-                (SOCKET_IO,readiness) if readiness.is_readable()  => {
-                    let (_,addr) =  socket.recv_from(&mut buf).unwrap();
-                    input_buffer.push((addr, TInput::decode(&buf).unwrap()));
                 },
                 _ => unreachable!(),
             }
