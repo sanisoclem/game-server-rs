@@ -20,7 +20,7 @@ impl comms::InputDatagram for InputPacket {
 
 
 impl comms::OutputDatagram for OutputPacket {
-    fn encode(s: &OutputPacket, buf: &mut [u8]) {
+    fn encode(self: &Self, buf: &mut [u8]) {
         // do nothing for now
     }
 }

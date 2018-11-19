@@ -1,4 +1,5 @@
 use comms;
+use std::net::SocketAddr;
 use data::{InputPacket,OutputPacket};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -9,32 +10,36 @@ pub struct ServerConfig {
 
 pub fn start(config: &ServerConfig, exit_requested: Arc<AtomicBool>) {
     // -- start comms
-    let mut commsMgr : comms::CommsManager<InputPacket,OutputPacket> = comms::start_udp(&config.in_address);
+    let mut comms_mgr : comms::CommsManager<InputPacket,OutputPacket> = comms::start_udp(&config.in_address);
 
-    let mut inputBuffer: Box<Vec<InputPacket>> = Box::new(Vec::new());
-    let mut outputBuffer: Box<Vec<OutputPacket>> = Box::new(Vec::new());;
+    let mut input_buf: Box<Vec<(SocketAddr,InputPacket)>> = Box::new(Vec::new());
+    let mut output_buf: Box<Vec<(SocketAddr,OutputPacket)>> = Box::new(Vec::new());;
 
     // -- main loop
     while !exit_requested.load(Ordering::SeqCst) {
         // swap input buffers
-        inputBuffer =  commsMgr.swap_inputs(inputBuffer);
+        input_buf =  comms_mgr.swap_inputs(input_buf);
 
         // calculate changes to game state
-        while let Some(item) = inputBuffer.pop() {
+        while let Some((s,item)) = input_buf.pop() {
             println!("received message: {0}", item.dummy);
+            output_buf.push((s, OutputPacket {
+                dummy: 0
+            }));
         }
 
-        std::thread::sleep_ms(5000);
+        //std::thread::sleep_ms(5000);
 
         // -- calculate contents of output buffer
 
         // -- swap buffers
-        //outputBuffer = commsMgr.swap_outputs(outputBuffer);
+        output_buf = comms_mgr.swap_outputs(output_buf);
+        output_buf.clear();
     }
     println!("cleaning up");
 
     // -- clenaup threads
-    commsMgr.finalize();
+    comms_mgr.finalize();
 
     println!("Exiting");
 }
