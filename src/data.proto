@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package data.proto;
+
+message InputPacket {
+  int32 user = 1;
+  int32 action = 2;
+  int32 loc_x = 3;
+  int32 loc_y = 4;
+}
+
+message OutputPacket {
+  int32 user = 1;
+  int32 state = 2;
+  int32 loc_x = 3;
+  int32 loc_y = 4;
+}

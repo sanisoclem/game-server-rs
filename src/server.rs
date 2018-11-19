@@ -1,6 +1,6 @@
 use comms;
 use std::net::SocketAddr;
-use data::{InputPacket,OutputPacket};
+use data_proto::{InputPacket,OutputPacket};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
@@ -22,9 +22,12 @@ pub fn start(config: &ServerConfig, exit_requested: Arc<AtomicBool>) {
 
         // calculate changes to game state
         while let Some((s,item)) = input_buf.pop() {
-            println!("received message: {0}", item.dummy);
-            output_buf.push((s, OutputPacket {
-                dummy: 0
+            //println!("received message: {0}", item);
+            output_buf.push((s,OutputPacket{
+                user: item.user,
+                state: item.action,
+                loc_x: item.loc_x,
+                loc_y: item.loc_y,
             }));
         }
 

@@ -1,10 +1,18 @@
+#[macro_use]
+extern crate prost_derive;
 extern crate ctrlc;
 extern crate mio;
 extern crate mio_extras;
+extern crate prost;
+extern crate bytes;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
+// Include the `items` module, which is generated from items.proto.
+pub mod data_proto {
+    include!(concat!(env!("OUT_DIR"), "/data.proto.rs"));
+}
 mod comms;
 mod server;
 mod data;

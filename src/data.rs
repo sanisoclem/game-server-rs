@@ -1,26 +1,28 @@
 
-
+use bytes;
 use comms;
-pub struct InputPacket {
-    pub dummy: i16
-}
-
-
-pub struct OutputPacket{
-    pub dummy: i32
-}
+use data_proto::{InputPacket,OutputPacket};
+use prost::Message;
 
 impl comms::InputDatagram for InputPacket {
-    fn decode(_: &[u8]) -> InputPacket {
-        InputPacket {
-            dummy: 0
-        }
+    fn deserialize(b: &[u8]) -> InputPacket {
+        let buf = bytes::Bytes::from(b);
+        InputPacket::decode(buf).unwrap()
     }
 }
 
 
 impl comms::OutputDatagram for OutputPacket {
     fn encode(self: &Self, buf: &mut [u8]) {
-        // do nothing for now
+        //let mut bs = bytes::BytesMut::from(buf);
+        //self.encode(bs);
     }
 }
+
+
+// pub fn create_large_shirt(color: String) -> items::Shirt {
+//     let mut shirt = items::Shirt::default();
+//     shirt.color = color;
+//     shirt.set_size(items::shirt::Size::Large);
+//     shirt
+// }
