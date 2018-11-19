@@ -5,3 +5,5 @@ authors = ["Jerahmeel Cosinas <me@jerahmeelcosinas.net>"]
 
 [dependencies]
 ctrlc = { version = "3.0", features = ["termination"] }
+mio = "0.6.16"
+mio-extras = "2.0.5"

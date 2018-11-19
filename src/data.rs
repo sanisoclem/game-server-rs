@@ -1,9 +1,26 @@
 
+
+use comms;
 pub struct InputPacket {
-    dummy: i16
+    pub dummy: i16
 }
 
 
 pub struct OutputPacket{
-    dummy: i32
+    pub dummy: i32
+}
+
+impl comms::InputDatagram for InputPacket {
+    fn decode(_: &[u8]) -> InputPacket {
+        InputPacket {
+            dummy: 0
+        }
+    }
+}
+
+
+impl comms::OutputDatagram for OutputPacket {
+    fn encode(s: &OutputPacket, buf: &mut [u8]) {
+        // do nothing for now
+    }
 }
