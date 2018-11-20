@@ -3,14 +3,16 @@ syntax = "proto3";
 package data.proto;
 
 message InputPacket {
-  int32 user = 1;
-  int32 action = 2;
+  uint32 user = 1;
+  int32 uid = 2;
   int32 loc_x = 3;
   int32 loc_y = 4;
+  float speed = 5;
+  float rot_z = 6;
 }
 
 message OutputPacket {
-  int32 user = 1;
+  uint32 user = 1;
   int32 state = 2;
   int32 loc_x = 3;
   int32 loc_y = 4;
