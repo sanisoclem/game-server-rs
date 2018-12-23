@@ -1,17 +1,4 @@
-[package]
-name = "game-server-rs"
-version = "0.1.0"
-authors = ["Jerahmeel Cosinas <me@jerahmeelcosinas.net>"]
-build = "build.rs"
-
-[dependencies]
-ctrlc = { version = "3.0", features = ["termination"] }
-mio = "0.6.16"
-mio-extras = "2.0.5"
-bytes = "0.4.11"
-prost = "0.4.0"
-prost-derive = "0.4.0"
-
-
-[build-dependencies]
-prost-build = "0.4.0"
+[workspace]
+members=[
+  "field-procesors/spatial"
+]
